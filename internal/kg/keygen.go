@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+type Lang string
+
+const (
+	Ru Lang = "ru_ru"
+	En Lang = "en_us"
+)
+
 // todo checking fields
 // todo adding titles of tasks
 func (q *Quest) GenerateKeys() string {

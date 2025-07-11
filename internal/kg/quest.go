@@ -2,13 +2,6 @@ package kg
 
 import "strings"
 
-type Lang string
-
-const (
-	Ru Lang = "ru_ru"
-	En Lang = "en_us"
-)
-
 type Quest struct {
 	Id           string
 	Number       int
