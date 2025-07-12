@@ -158,26 +158,26 @@ func (q *Quest) GenerateKeys() string {
 	return result
 }
 
-func (q *Quest) GenerateMapPart() (string, error) {
+func (q *Quest) GenerateMapPart() string {
 	numDesctription := 0
 	result := ""
 
 	// title
 	if q.Title != "" {
-		result += fmt.Sprintf(", \"%s.%s.%s.quest%d.title\": \"%s\"",
+		result += fmt.Sprintf(",\n\t\"%s.%s.%s.quest%d.title\": \"%s\"",
 			q.ModpackName, q.Chapter, q.Id, q.Number, q.Title)
 	}
 
 	// subtitle
 	if q.Subtitle != "" {
-		result += fmt.Sprintf(", \"%s.%s.%s.quest%d.subtitle\": \"%s\"",
+		result += fmt.Sprintf(",\n\t\"%s.%s.%s.quest%d.subtitle\": \"%s\"",
 			q.ModpackName, q.Chapter, q.Id, q.Number, q.Subtitle)
 	}
 
 	// description
 	for _, description := range q.Description {
 		if description != "" {
-			result += fmt.Sprintf(", \"%s.%s.%s.quest%d.description%d\": \"%s\"",
+			result += fmt.Sprintf(",\n\t\"%s.%s.%s.quest%d.description%d\": \"%s\"",
 				q.ModpackName, q.Chapter, q.Id, q.Number, numDesctription, description)
 			numDesctription++
 		}
@@ -185,13 +185,11 @@ func (q *Quest) GenerateMapPart() (string, error) {
 
 	// task titles
 	for i, titleTask := range q.TaskTitles {
-		result += fmt.Sprintf(", \"%s.%s.%s.quest%d.task%d.title\": \"%s\"",
+		result += fmt.Sprintf(",\n\t\"%s.%s.%s.quest%d.task%d.title\": \"%s\"",
 			q.ModpackName, q.Chapter, q.Id, q.Number, i, titleTask)
 	}
 
-	if q.Number == 0 {
-		result = strings.TrimPrefix(result, ", ")
-	}
+	result = strings.TrimPrefix(result, ", ")
 
-	return result, nil
+	return result
 }
