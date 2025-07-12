@@ -18,6 +18,7 @@ func (q Quest) GenerateKeys() string {
 
 	isSavingDescription := false
 	numDesctription := 0
+	numArrayDescription := 0
 
 	var keys []int
 	numKey := 0
@@ -54,14 +55,15 @@ func (q Quest) GenerateKeys() string {
 		}
 
 		if isSavingDescription {
-			if q.Description[numDesctription] == "" {
+			if q.Description[numArrayDescription] == "" {
 				result += "\t\t\t\t\"\"\n"
 			} else {
 				result += fmt.Sprintf("\t\t\t\t\"{homestead.%s.%s.quest%d.description%d}\"\n",
 					q.Chapter, q.Id, q.Number, numDesctription)
+				numDesctription++
 			}
-			numDesctription++
-			if numDesctription == len(q.Description) {
+			numArrayDescription++
+			if numArrayDescription == len(q.Description) {
 				isSavingDescription = false
 			}
 			continue
