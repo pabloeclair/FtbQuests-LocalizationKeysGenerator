@@ -8,7 +8,7 @@ type Quest struct {
 	Chapter      string
 	Title        string
 	Subtitle     string
-	TaskTitles   []string
+	TaskTitles   map[int]string
 	Description  []string
 	OriginalText string
 }
@@ -16,9 +16,16 @@ type Quest struct {
 // todo checking fields
 // todo adding titles of tasks
 func SnbtToQuest(s string, num int, chapter string) (Quest, error) {
-	quest := Quest{Number: num, Chapter: chapter, OriginalText: s}
+	quest := Quest{
+		Number:       num,
+		Chapter:      chapter,
+		TaskTitles:   map[int]string{},
+		OriginalText: s,
+	}
 
 	isSavingDescription := false
+	numTask := 0
+	isTasks := false
 	for _, line := range strings.Split(s, "\n") {
 
 		// id
@@ -59,6 +66,19 @@ func SnbtToQuest(s string, num int, chapter string) (Quest, error) {
 
 			descriptionPart := strings.Trim(stripedLine, "\"")
 			quest.Description = append(quest.Description, descriptionPart)
+			continue
+		}
+
+		// task titles
+		if strings.HasPrefix(line, "\t\t\ttasks:") {
+			isTasks = true
+		}
+		if isTasks && strings.HasPrefix(line, "\t\t\t\t}") {
+			numTask++
+		}
+		if after, ok := strings.CutPrefix(stripedLine, "title: "); ok && isTasks {
+			taskTitle := strings.Trim(after, "\"")
+			quest.TaskTitles[numTask] = taskTitle
 		}
 	}
 

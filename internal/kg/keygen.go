@@ -13,12 +13,18 @@ const (
 )
 
 // todo checking fields
-// todo adding titles of tasks
-func (q *Quest) GenerateKeys() string {
+func (q Quest) GenerateKeys() string {
 	result := ""
 
 	isSavingDescription := false
 	numDesctription := 0
+
+	var keys []int
+	numKey := 0
+	for key := range q.TaskTitles {
+		keys = append(keys, key)
+	}
+
 	for _, line := range strings.Split(q.OriginalText, "\n") {
 
 		// title
@@ -58,6 +64,14 @@ func (q *Quest) GenerateKeys() string {
 			if numDesctription == len(q.Description) {
 				isSavingDescription = false
 			}
+			continue
+		}
+
+		// task titles
+		if strings.HasPrefix(line, "\t\t\t\t\ttitle: ") {
+			result += fmt.Sprintf("\t\t\t\t\ttitle: \"{homestead.%s.%s.quest%d.task%d.title}\"\n",
+				q.Chapter, q.Id, q.Number, keys[numKey])
+			numKey++
 			continue
 		}
 
