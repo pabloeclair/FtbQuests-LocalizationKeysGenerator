@@ -54,7 +54,7 @@ func main() {
 		if scanner.Text() == "\t\t}" {
 
 			// Creating keys
-			quest, err := kg.SnbtToQuest(questLines, len(questArray), chapter)
+			quest, err := kg.SnbtToQuest(len(questArray), "homestead", chapter, questLines)
 			if err != nil {
 				log.Fatal("Error parsing quest:", err)
 			}

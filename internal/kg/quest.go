@@ -3,9 +3,10 @@ package kg
 import "strings"
 
 type Quest struct {
-	Id           string
 	Number       int
+	ModpackName  string
 	Chapter      string
+	Id           string
 	Title        string
 	Subtitle     string
 	TaskTitles   map[int]string
@@ -14,19 +15,19 @@ type Quest struct {
 }
 
 // todo checking fields
-// todo adding titles of tasks
-func SnbtToQuest(s string, num int, chapter string) (Quest, error) {
+func SnbtToQuest(num int, modpackName string, chapter string, originalText string) (Quest, error) {
 	quest := Quest{
 		Number:       num,
+		ModpackName:  modpackName,
 		Chapter:      chapter,
 		TaskTitles:   map[int]string{},
-		OriginalText: s,
+		OriginalText: originalText,
 	}
 
 	isSavingDescription := false
 	numTask := 0
 	isTasks := false
-	for _, line := range strings.Split(s, "\n") {
+	for _, line := range strings.Split(originalText, "\n") {
 
 		// id
 		if after, ok := strings.CutPrefix(line, "\t\t\tid: "); ok {
