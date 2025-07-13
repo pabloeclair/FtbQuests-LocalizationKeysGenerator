@@ -3,25 +3,24 @@ package kg
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-func ParseQuestsAndGenerateKeys(modpackName string, fileName string, text string) ([]Quest, string, error) {
+func ParseQuestsAndGenerateKeys(modpackName string, fileName string) ([]Quest, string, error) {
 	resultQuests := []Quest{}
 	resultKeys := ""
 
 	filePath := filepath.Join("ftbquests", "quests", "chapters", fileName)
 	f, err := os.Open(filePath)
 	if err != nil {
-		return resultQuests, resultKeys, fmt.Errorf("error opening file %s: %v", filePath, err)
+		return resultQuests, resultKeys, fmt.Errorf("opening file %s error: %v", filePath, err)
 	}
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	chapter := strings.TrimSuffix(f.Name(), ".snbt")
+	chapter := strings.TrimSuffix(fileName, ".snbt")
 
 	startArray := false
 	startQuest := false
@@ -57,7 +56,7 @@ func ParseQuestsAndGenerateKeys(modpackName string, fileName string, text string
 			// Creating keys
 			quest, err := SnbtToQuest(len(resultQuests), modpackName, chapter, questLines)
 			if err != nil {
-				log.Fatal("Error parsing quest:", err)
+				return resultQuests, resultKeys, fmt.Errorf("parsing quest %s error: %v", questLines, err)
 			}
 			resultKeys += quest.GenerateKeys()
 			questLines = ""
@@ -67,18 +66,18 @@ func ParseQuestsAndGenerateKeys(modpackName string, fileName string, text string
 		}
 
 		if startArray && !startQuest {
-			resultKeys += scanner.Text() + "\n"
+			resultKeys += scanner.Text()
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return resultQuests, resultKeys, fmt.Errorf("error reading file %s: %v", filePath, err)
+		return resultQuests, resultKeys, fmt.Errorf("reading file %s error: %v", filePath, err)
 	}
 
 	return resultQuests, resultKeys, nil
 }
 
-func GenerateMap(lang string, quests []Quest) (string, error) {
+func GenerateMap(lang string, questsMap map[string][]Quest) (string, error) {
 	l := Lang_array[lang]
 	if l.String() == "unknown" {
 		return "", fmt.Errorf("unknown language %s; please, check correct codes in internal/kg/lang.go", l)
@@ -86,13 +85,18 @@ func GenerateMap(lang string, quests []Quest) (string, error) {
 
 	result := "{\n"
 
-	for i, quest := range quests {
-		if i == len(quests)-1 {
-			result += quest.GenerateMapPart() + "\n}"
-		} else {
-			result += quest.GenerateMapPart() + ",\n\t"
+	i := 0
+	for _, quests := range questsMap {
+		for ii, quest := range quests {
+			if ii == len(quests)-1 && i == len(questsMap)-1 {
+				result += quest.GenerateMapPart() + "\n"
+			} else {
+				result += quest.GenerateMapPart() + ",\n"
+			}
 		}
+		i++
 	}
+	result += "}\n"
 
 	return result, nil
 }

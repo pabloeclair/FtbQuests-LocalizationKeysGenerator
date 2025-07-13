@@ -189,7 +189,7 @@ func (q *Quest) GenerateMapPart() string {
 			q.ModpackName, q.Chapter, q.Id, q.Number, i, titleTask)
 	}
 
-	result = strings.TrimPrefix(result, ", ")
+	result = strings.TrimPrefix(result, ",\n")
 
 	return result
 }
