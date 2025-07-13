@@ -1,95 +1,134 @@
 package main
 
 import (
-	"bufio"
 	"errors"
+	"fmt"
 	"keysgen/internal/kg"
-	"log"
+	"keysgen/internal/utils"
 	"os"
-	"strings"
+	"path/filepath"
 )
 
 func main() {
-	f, err := os.Open("beginning_game.snbt")
-	if err != nil {
-		log.Fatal("Error opening file:", err)
+
+	// Validation
+	_, err := os.Stat("ftbquests")
+	if os.IsNotExist(err) {
+		fmt.Printf("ERROR: please take the `ftbquests` directory from the `.minecraft/config` path and add it to the root of the repository.\n")
+		return
 	}
-	defer f.Close()
 
-	chapter := strings.TrimSuffix(f.Name(), ".snbt")
-
-	scanner := bufio.NewScanner(f)
-
-	startArray := false
-	startQuest := false
-	result := ""
-	questLines := ""
-	questArray := []kg.Quest{}
-
-	for scanner.Scan() {
-
-		// Waiting for the quests array to start
-		if !startArray {
-			result += scanner.Text() + "\n"
-			if strings.TrimSpace(scanner.Text()) == "quests: [" {
-				startArray = true
-				continue
-			} else {
-				continue
-			}
+	files, err := os.ReadDir(filepath.Join("ftbquests", "quests", "chapters"))
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Printf("ERROR: please take the `ftbquests` directory from the `.minecraft/config` path and add it to the root of the repository.\n")
+			fmt.Println("Are you sure you take the `ftbquests` directory from the `.minecraft/config` path?")
+			fmt.Println("`ftbquests` directory from the `.minecraft/congih` path must have the following structure:")
+			fmt.Println(`
+				ftbquests
+					└── quests
+						└── chapters
+							├── <chapter_name1>
+							└── <chapter_name2>
+			`)
+			return
+		} else {
+			fmt.Printf("ERROR: reading directory error: %v\n", err)
 		}
+	}
 
-		// Start reading quest
-		if scanner.Text() == "\t\t{" {
-			questLines = scanner.Text() + "\n"
-			startQuest = true
+	// Input
+	fmt.Println("Please enter the name of modpack: ")
+	var modpackName string
+	if _, err = fmt.Scan(&modpackName); err != nil {
+		if !errors.Is(err, os.ErrExist) {
+			fmt.Printf("ERROR: reading input error: %v", err)
+			return
+		}
+	}
+
+	fmt.Println("Please enter the code of the original language (for example, `en_us`): ")
+	var originalLang string
+	if _, err = fmt.Scan(&originalLang); err != nil {
+		if !errors.Is(err, os.ErrExist) {
+			fmt.Printf("ERROR: reading input error: %v", err)
+			return
+		}
+	}
+
+	// fmt.Println("Please enter the code of the translation language (for example, `ru_ru`): ")
+	// var translationLang string
+	// if _, err = fmt.Scan(&translationLang); err != nil {
+	// 	if !errors.Is(err, os.ErrExist) {
+	// 		fmt.Printf("ERROR: reading input error: %v", err)
+	// 		return
+	// 	}
+	// }
+
+	questsMap := map[string][]kg.Quest{}
+	keysMap := map[string]string{}
+
+	// Parsing
+	fmt.Println("Parsing quests...")
+	for _, file := range files {
+		if file.IsDir() {
 			continue
 		}
 
-		if startQuest {
-			questLines += scanner.Text() + "\n"
-		}
-
-		// End reading quest
-		if scanner.Text() == "\t\t}" {
-
-			// Creating keys
-			quest, err := kg.SnbtToQuest(len(questArray), "homestead", chapter, questLines)
+		if filepath.Ext(file.Name()) == ".snbt" {
+			quests, keys, err := kg.ParseQuestsAndGenerateKeys(modpackName, file.Name())
 			if err != nil {
-				log.Fatal("Error parsing quest:", err)
+				fmt.Println("ERROR:", err)
+				continue
 			}
-			result += quest.GenerateKeys()
-			questLines = ""
-			questArray = append(questArray, quest)
-			startQuest = false
+			questsMap[file.Name()] = quests
+			keysMap[file.Name()] = keys
+		}
+		fmt.Println(file.Name() + " done.")
+	}
+
+	// Create output directories
+	outputFilePath := filepath.Join("output", "ftbquests", "quests", "chapters")
+	if err = os.MkdirAll(outputFilePath, 0755); err != nil {
+		if !errors.Is(err, os.ErrExist) {
+			fmt.Printf("ERROR: creating %s directory error: %v\n", outputFilePath, err)
+			return
+		}
+	}
+
+	langFilePath := filepath.Join("output", "ftbquests", "lang")
+	if err = os.Mkdir(langFilePath, 0755); err != nil {
+		if !errors.Is(err, os.ErrExist) {
+			fmt.Printf("ERROR: creating %s directory error: %v\n", langFilePath, err)
+			return
+		}
+	}
+
+	// Write keys
+	for _, file := range files {
+		if file.IsDir() {
 			continue
 		}
-
-		if startArray && !startQuest {
-			result += scanner.Text() + "\n"
+		filePath := filepath.Join(outputFilePath, file.Name())
+		if err = utils.CreateAndWriteFile(filePath, keysMap[file.Name()]); err != nil {
+			fmt.Println("ERROR:", err)
+			return
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		log.Fatal("Error reading file:", err)
-	}
-
-	if err = os.Mkdir("output", 0755); err != nil {
-		if !errors.Is(err, os.ErrExist) {
-			log.Fatal("Error creating output directory:", err)
-		}
-	}
-
-	newF, err := os.Create("output/beginning_game.snbt")
+	// Write translation map
+	fmt.Println("Generating translation map...")
+	originalMap, err := kg.GenerateMap(originalLang, questsMap)
 	if err != nil {
-		if !errors.Is(err, os.ErrExist) {
-			log.Fatal("Error creating output file:", err)
-		}
+		fmt.Printf("ERROR: generating original map error: %v\n", err)
+		return
+	}
+	if err = utils.CreateAndWriteFile(filepath.Join(langFilePath, originalLang+".json"), originalMap); err != nil {
+		fmt.Println("ERROR:", err)
+		return
 	}
 
-	if _, err = newF.WriteString(result); err != nil {
-		if !errors.Is(err, os.ErrExist) {
-			log.Fatal("Error writing to output file:", err)
-		}
-	}
+	fmt.Println("Done!")
+
+	// todo: add google translate
 }
