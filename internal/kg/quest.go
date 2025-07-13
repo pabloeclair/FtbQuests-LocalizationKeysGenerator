@@ -41,12 +41,18 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 		// title
 		if after, ok := strings.CutPrefix(line, "\t\t\ttitle: "); ok {
 			title := strings.Trim(after, "\"")
+			if title[len(title)-1] == '\\' {
+				title += "\""
+			}
 			quest.Title = title
 		}
 
 		// subtitle
 		if after, ok := strings.CutPrefix(line, "\t\t\tsubtitle: "); ok {
 			subtitle := strings.Trim(after, "\"")
+			if subtitle[len(subtitle)-1] == '\\' {
+				subtitle += "\""
+			}
 			quest.Subtitle = subtitle
 		}
 
@@ -55,6 +61,9 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 		if after, ok := strings.CutPrefix(line, "\t\t\tdescription: "); ok {
 			if strings.HasSuffix(stripedLine, "]") {
 				description := strings.Trim(after, "[]\"")
+				if description[len(description)-1] == '\\' {
+					description += "\""
+				}
 				quest.Description = append(quest.Description, description)
 				continue
 			}
@@ -69,6 +78,9 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 			}
 
 			descriptionPart := strings.Trim(stripedLine, "\"")
+			if len(descriptionPart) > 1 && descriptionPart[len(descriptionPart)-1] == '\\' {
+				descriptionPart += "\""
+			}
 			quest.Description = append(quest.Description, descriptionPart)
 			continue
 		}
@@ -82,6 +94,9 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 		}
 		if after, ok := strings.CutPrefix(stripedLine, "title: "); ok && isTasks {
 			taskTitle := strings.Trim(after, "\"")
+			if taskTitle[len(taskTitle)-1] == '\\' {
+				taskTitle += "\""
+			}
 			quest.TaskTitles[numTask] = taskTitle
 		}
 	}
