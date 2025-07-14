@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func CreateAndWriteFile(filePath string, content string) error {
+func CreateWriteFile(filePath string, content string) error {
 	newF, err := os.Create(filePath)
 	if err != nil {
 		if !errors.Is(err, os.ErrExist) {

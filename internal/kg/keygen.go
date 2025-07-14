@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func ParseQuestsAndGenerateKeys(modpackName string, fileName string) ([]Quest, string, error) {
+func GenerateQuestsAndKeys(modpackName string, fileName string) ([]Quest, string, error) {
 	resultQuests := []Quest{}
 	resultKeys := ""
 

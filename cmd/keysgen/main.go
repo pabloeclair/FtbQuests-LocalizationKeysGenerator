@@ -76,7 +76,7 @@ func main() {
 		}
 
 		if filepath.Ext(file.Name()) == ".snbt" {
-			quests, keys, err := kg.ParseQuestsAndGenerateKeys(modpackName, file.Name())
+			quests, keys, err := kg.GenerateQuestsAndKeys(modpackName, file.Name())
 			if err != nil {
 				fmt.Println("ERROR:", err)
 				continue
@@ -110,7 +110,7 @@ func main() {
 			continue
 		}
 		filePath := filepath.Join(outputFilePath, file.Name())
-		if err = utils.CreateAndWriteFile(filePath, keysMap[file.Name()]); err != nil {
+		if err = utils.CreateWriteFile(filePath, keysMap[file.Name()]); err != nil {
 			fmt.Println("ERROR:", err)
 			return
 		}
@@ -123,7 +123,7 @@ func main() {
 		fmt.Printf("ERROR: generating original map error: %v\n", err)
 		return
 	}
-	if err = utils.CreateAndWriteFile(filepath.Join(langFilePath, originalLang+".json"), originalMap); err != nil {
+	if err = utils.CreateWriteFile(filepath.Join(langFilePath, originalLang+".json"), originalMap); err != nil {
 		fmt.Println("ERROR:", err)
 		return
 	}
