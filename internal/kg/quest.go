@@ -36,6 +36,7 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 		if after, ok := strings.CutPrefix(line, "\t\t\tid: "); ok {
 			id := strings.Trim(after, "\"")
 			quest.Id = id
+			continue
 		}
 
 		// title
@@ -45,6 +46,7 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 				title += "\""
 			}
 			quest.Title = title
+			continue
 		}
 
 		// subtitle
@@ -54,6 +56,7 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 				subtitle += "\""
 			}
 			quest.Subtitle = subtitle
+			continue
 		}
 
 		// description
@@ -88,7 +91,9 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 		// task titles
 		if strings.HasPrefix(line, "\t\t\ttasks:") {
 			isTasks = true
+			continue
 		}
+
 		if isTasks && strings.HasPrefix(line, "\t\t\t\t}") {
 			numTask++
 		}
@@ -98,6 +103,10 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 				taskTitle += "\""
 			}
 			quest.TaskTitles[numTask] = taskTitle
+		}
+
+		if isTasks && (strings.HasPrefix(line, "\t\t\t\t]") || strings.HasPrefix(line, "\t\t\t\t}]")) {
+			isTasks = false
 		}
 	}
 
@@ -117,6 +126,7 @@ func (q *Quest) GenerateKeys() string {
 		keys = append(keys, key)
 	}
 
+	isTasks := false
 	for _, line := range strings.Split(q.OriginalText, "\n") {
 
 		// title
@@ -161,11 +171,20 @@ func (q *Quest) GenerateKeys() string {
 		}
 
 		// task titles
-		if strings.HasPrefix(line, "\t\t\t\t\ttitle: ") {
-			result += fmt.Sprintf("\t\t\t\t\ttitle: \"{%s.%s.%s.quest%d.task%d.title}\"\n",
+		if strings.HasPrefix(line, "\t\t\ttasks:") {
+			isTasks = true
+		}
+
+		if _, ok := strings.CutPrefix(strings.TrimSpace(line), "title:"); ok && isTasks {
+			parts := strings.Split(line, "title:")
+			result += parts[0] + fmt.Sprintf("title: \"{%s.%s.%s.quest%d.task%d.title}\"\n",
 				q.ModpackName, q.Chapter, q.Id, q.Number, keys[numKey])
 			numKey++
 			continue
+		}
+
+		if isTasks && (strings.HasPrefix(line, "\t\t\t]") || strings.HasPrefix(line, "\t\t\t}]")) {
+			isTasks = false
 		}
 
 		result += line + "\n"
