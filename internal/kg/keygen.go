@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -83,12 +84,18 @@ func GenerateMap(lang string, questsMap map[string][]Quest) (string, error) {
 		return "", fmt.Errorf("unknown language %s; please, check correct codes in internal/kg/lang.go", l)
 	}
 
+	keys := make([]string, 0, len(questsMap))
+	for k := range questsMap {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+
 	result := "{\n"
 
 	i := 0
-	for _, quests := range questsMap {
-		for ii, quest := range quests {
-			if ii == len(quests)-1 && i == len(questsMap)-1 {
+	for _, key := range keys {
+		for ii, quest := range questsMap[key] {
+			if ii == len(questsMap[key])-1 && i == len(questsMap)-1 {
 				result += quest.GenerateMapPart() + "\n"
 			} else {
 				result += quest.GenerateMapPart() + ",\n"
