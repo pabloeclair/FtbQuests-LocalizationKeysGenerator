@@ -2,6 +2,7 @@ package kg
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -98,6 +99,11 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 			continue
 		}
 
+		if isTasks && strings.HasPrefix(line, "\t\t\t\t}") {
+			numTask++
+			continue
+		}
+
 		if after, ok := strings.CutPrefix(stripedLine, "title: "); ok && isTasks {
 			taskTitle := strings.Trim(after, "\"")
 			if taskTitle[len(taskTitle)-1] == '\\' {
@@ -115,6 +121,11 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 		// reward titles
 		if strings.HasPrefix(line, "\t\t\trewards:") {
 			isReward = true
+			continue
+		}
+
+		if isReward && strings.HasPrefix(line, "\t\t\t\t}") {
+			numReward++
 			continue
 		}
 
@@ -148,12 +159,14 @@ func (q *Quest) GenerateKeys() string {
 	for key := range q.TaskTitles {
 		taskNums = append(taskNums, key)
 	}
+	slices.Sort(taskNums)
 
 	var rewardNums []int
 	numReward := 0
 	for key := range q.RewardTitles {
 		rewardNums = append(rewardNums, key)
 	}
+	slices.Sort(rewardNums)
 
 	isTasks := false
 	isReward := false
