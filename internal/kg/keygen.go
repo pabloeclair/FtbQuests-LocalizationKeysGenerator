@@ -9,14 +9,14 @@ import (
 	"strings"
 )
 
-func GenerateQuestsAndKeys(modpackName string, fileName string) ([]Quest, string, error) {
-	resultQuests := []Quest{}
+func GenerateQuestsAndKeys(modpackName string, fileName string) ([]*Quest, string, error) {
+	resultQuests := []*Quest{}
 	resultKeys := ""
 
 	filePath := filepath.Join("ftbquests", "quests", "chapters", fileName)
 	f, err := os.Open(filePath)
 	if err != nil {
-		return resultQuests, resultKeys, fmt.Errorf("opening file %s error: %v", filePath, err)
+		return nil, resultKeys, fmt.Errorf("opening file %s error: %v", filePath, err)
 	}
 	defer f.Close()
 
@@ -57,7 +57,7 @@ func GenerateQuestsAndKeys(modpackName string, fileName string) ([]Quest, string
 			// Creating keys
 			quest, err := SnbtToQuest(len(resultQuests), modpackName, chapter, questLines)
 			if err != nil {
-				return resultQuests, resultKeys, fmt.Errorf("parsing quest %s error: %v", questLines, err)
+				return nil, resultKeys, fmt.Errorf("parsing quest %s error: %v", questLines, err)
 			}
 			resultKeys += quest.GenerateKeys()
 			questLines = ""
@@ -72,13 +72,13 @@ func GenerateQuestsAndKeys(modpackName string, fileName string) ([]Quest, string
 	}
 
 	if err := scanner.Err(); err != nil {
-		return resultQuests, resultKeys, fmt.Errorf("reading file %s error: %v", filePath, err)
+		return nil, resultKeys, fmt.Errorf("reading file %s error: %v", filePath, err)
 	}
 
 	return resultQuests, resultKeys, nil
 }
 
-func GenerateMap(lang string, questsMap map[string][]Quest) (string, error) {
+func GenerateMap(lang string, questsMap map[string][]*Quest) (string, error) {
 	l := Lang_array[lang]
 	if l.String() == "unknown" {
 		return "", fmt.Errorf("unknown language %s; please, check correct codes in internal/kg/lang.go", l)

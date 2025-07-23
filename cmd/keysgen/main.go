@@ -73,7 +73,7 @@ func main() {
 		// 	}
 		// }
 
-		questsMap := map[string][]kg.Quest{}
+		questsMap := map[string][]*kg.Quest{}
 		keysMap := map[string]string{}
 
 		// Parsing
