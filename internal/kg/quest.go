@@ -13,23 +13,27 @@ type Quest struct {
 	Title        string
 	Subtitle     string
 	TaskTitles   map[int]string
+	RewardTitles map[int]string
 	Description  []string
 	OriginalText string
 }
 
 // todo checking fields
-func SnbtToQuest(num int, modpackName string, chapter string, originalText string) (Quest, error) {
+func SnbtToQuest(num int, modpackName string, chapter string, originalText string) (*Quest, error) {
 	quest := Quest{
 		Number:       num,
 		ModpackName:  modpackName,
 		Chapter:      chapter,
 		TaskTitles:   map[int]string{},
+		RewardTitles: map[int]string{},
 		OriginalText: originalText,
 	}
 
 	isSavingDescription := false
 	numTask := 0
+	numReward := 0
 	isTasks := false
+	isReward := false
 	for _, line := range strings.Split(originalText, "\n") {
 
 		// id
@@ -94,23 +98,42 @@ func SnbtToQuest(num int, modpackName string, chapter string, originalText strin
 			continue
 		}
 
-		if isTasks && strings.HasPrefix(line, "\t\t\t\t}") {
-			numTask++
-		}
 		if after, ok := strings.CutPrefix(stripedLine, "title: "); ok && isTasks {
 			taskTitle := strings.Trim(after, "\"")
 			if taskTitle[len(taskTitle)-1] == '\\' {
 				taskTitle += "\""
 			}
 			quest.TaskTitles[numTask] = taskTitle
+			numTask++
 		}
 
-		if isTasks && (strings.HasPrefix(line, "\t\t\t\t]") || strings.HasPrefix(line, "\t\t\t\t}]")) {
+		if isTasks && (strings.HasPrefix(line, "\t\t\t]") || strings.HasPrefix(line, "\t\t\t}]")) {
 			isTasks = false
+			continue
+		}
+
+		// reward titles
+		if strings.HasPrefix(line, "\t\t\trewards:") {
+			isReward = true
+			continue
+		}
+
+		if after, ok := strings.CutPrefix(stripedLine, "title: "); ok && isReward {
+			rewardTitle := strings.Trim(after, "\"")
+			if rewardTitle[len(rewardTitle)-1] == '\\' {
+				rewardTitle += "\""
+			}
+			quest.RewardTitles[numReward] = rewardTitle
+			numReward++
+		}
+
+		if isReward && (strings.HasPrefix(line, "\t\t\t]") || strings.HasPrefix(line, "\t\t\t}]")) {
+			isReward = false
+			continue
 		}
 	}
 
-	return quest, nil
+	return &quest, nil
 }
 
 func (q *Quest) GenerateKeys() string {
@@ -120,13 +143,20 @@ func (q *Quest) GenerateKeys() string {
 	numDesctription := 0
 	numArrayDescription := 0
 
-	var keys []int
-	numKey := 0
+	var taskNums []int
+	numTask := 0
 	for key := range q.TaskTitles {
-		keys = append(keys, key)
+		taskNums = append(taskNums, key)
+	}
+
+	var rewardNums []int
+	numReward := 0
+	for key := range q.RewardTitles {
+		rewardNums = append(rewardNums, key)
 	}
 
 	isTasks := false
+	isReward := false
 	for _, line := range strings.Split(q.OriginalText, "\n") {
 
 		// title
@@ -178,13 +208,30 @@ func (q *Quest) GenerateKeys() string {
 		if _, ok := strings.CutPrefix(strings.TrimSpace(line), "title:"); ok && isTasks {
 			parts := strings.Split(line, "title:")
 			result += parts[0] + fmt.Sprintf("title: \"{%s.%s.%s.quest%d.task%d.title}\"\n",
-				q.ModpackName, q.Chapter, q.Id, q.Number, keys[numKey])
-			numKey++
+				q.ModpackName, q.Chapter, q.Id, q.Number, taskNums[numTask])
+			numTask++
 			continue
 		}
 
 		if isTasks && (strings.HasPrefix(line, "\t\t\t]") || strings.HasPrefix(line, "\t\t\t}]")) {
 			isTasks = false
+		}
+
+		// reward titles
+		if strings.HasPrefix(line, "\t\t\trewards:") {
+			isReward = true
+		}
+
+		if _, ok := strings.CutPrefix(strings.TrimSpace(line), "title:"); ok && isReward {
+			parts := strings.Split(line, "title:")
+			result += parts[0] + fmt.Sprintf("title: \"{%s.%s.%s.quest%d.reward%d.title}\"\n",
+				q.ModpackName, q.Chapter, q.Id, q.Number, rewardNums[numReward])
+			numReward++
+			continue
+		}
+
+		if isReward && (strings.HasPrefix(line, "\t\t\t]") || strings.HasPrefix(line, "\t\t\t}]")) {
+			isReward = false
 		}
 
 		result += line + "\n"
@@ -221,6 +268,12 @@ func (q *Quest) GenerateMapPart() string {
 	for i, titleTask := range q.TaskTitles {
 		result += fmt.Sprintf(",\n\t\"%s.%s.%s.quest%d.task%d.title\": \"%s\"",
 			q.ModpackName, q.Chapter, q.Id, q.Number, i, titleTask)
+	}
+
+	// reward titles
+	for i, titleReward := range q.RewardTitles {
+		result += fmt.Sprintf(",\n\t\"%s.%s.%s.quest%d.reward%d.title\": \"%s\"",
+			q.ModpackName, q.Chapter, q.Id, q.Number, i, titleReward)
 	}
 
 	result = strings.TrimPrefix(result, ",\n")
